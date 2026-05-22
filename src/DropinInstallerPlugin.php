@@ -15,11 +15,12 @@ use Composer\Script\Event;
  * Dropin Installer Composer Plugin.
  *
  * Copies a single file from any installed package into a target directory
- * resolved from the root package's installer-paths configuration.
+ * resolved from the root package's installer-paths configuration, or a
+ * direct target path relative to the project root.
  *
  * ## Configuration
  *
- * In the package that wants to install a dropin, add to composer.json:
+ * ### Via installer-paths (WordPress MU-plugins etc.)
  *
  * ```json
  * {
@@ -33,17 +34,25 @@ use Composer\Script\Event;
  * }
  * ```
  *
+ * ### Via direct path (project root files)
+ *
+ * ```json
+ * {
+ *     "extra": {
+ *         "dropin": {
+ *             "file": "pint.json",
+ *             "target-path": "."
+ *         }
+ *     }
+ * }
+ * ```
+ *
  * - `file`        — filename to copy from the package root (required)
- * - `target-type` — installer-paths type to resolve the target directory (required)
- * - `target-dir`  — subdirectory within the target path (optional, defaults to package name)
+ * - `target-type` — installer-paths type to resolve the target directory
+ * - `target-path` — direct path relative to project root (alternative to target-type)
+ * - `target-dir`  — subdirectory within the target path (optional, used with target-type)
  *
- * ## How it works
- *
- * On `pre-autoload-dump`, iterates all installed packages and checks if they
- * have a `extra.dropin` configuration. For each, resolves the target directory
- * from the root package's `installer-paths` and copies the file there.
- *
- * On uninstall, removes the copied file.
+ * Either `target-type` or `target-path` is required.
  *
  * @since 1.0.0
  */
