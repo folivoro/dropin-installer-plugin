@@ -112,19 +112,22 @@ class DropinInstallerPlugin implements PluginInterface, EventSubscriberInterface
     {
         $file       = $dropin['file'] ?? null;
         $targetType = $dropin['target-type'] ?? null;
+        $targetPath = $dropin['target-path'] ?? null;
         $targetDir  = $dropin['target-dir'] ?? null;
 
-        if ($file === null || $targetType === null) {
+        if ($file === null || ($targetType === null && $targetPath === null)) {
             $this->io->writeError(
-                "<warning>Dropin: {$package->getName()} has invalid dropin config — 'file' and 'target-type' are required.</warning>"
+                "<warning>Dropin: {$package->getName()} has invalid dropin config — 'file' and either 'target-type' or 'target-path' are required.</warning>"
             );
 
             return;
         }
 
-        $targetPath = $this->resolveTargetPath($targetType, $file, $targetDir);
+        $resolvedPath = $targetPath !== null
+            ? $this->resolveDirectPath($targetPath, $file)
+            : $this->resolveTargetPath($targetType, $file, $targetDir);
 
-        if ($targetPath === null) {
+        if ($resolvedPath === null) {
             $this->io->writeError(
                 "<warning>Dropin: Could not resolve installer-path for type '{$targetType}'.</warning>"
             );
@@ -142,16 +145,35 @@ class DropinInstallerPlugin implements PluginInterface, EventSubscriberInterface
             return;
         }
 
-        $dir = dirname($targetPath);
+        $dir = dirname($resolvedPath);
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
-        copy($sourcePath, $targetPath);
+        // Never overwrite an existing file — the project owns it once copied
+        if (file_exists($resolvedPath)) {
+            return;
+        }
+
+        copy($sourcePath, $resolvedPath);
 
         $this->io->write(
-            "<info>Dropin: {$package->getName()}/{$file} → {$targetPath}</info>"
+            "<info>Dropin: {$package->getName()}/{$file} → {$resolvedPath}</info>"
         );
+    }
+
+    /**
+     * Resolve a direct path relative to the project root.
+     *
+     * @param string $targetPath Path relative to project root (e.g. '.' or 'config')
+     * @param string $file       Filename to copy
+     */
+    private function resolveDirectPath(string $targetPath, string $file): string
+    {
+        $root = $this->resolveProjectRoot();
+        $dir  = $targetPath === '.' ? $root : $root . DIRECTORY_SEPARATOR . trim($targetPath, '/\\');
+
+        return $dir . DIRECTORY_SEPARATOR . $file;
     }
 
     /**
