@@ -14,7 +14,7 @@ use Composer\Script\Event;
 /**
  * Dropin Installer Composer Plugin.
  *
- * Copies a single file from any installed package into a target directory
+ * Copies files from any installed package into a target directory
  * resolved from the root package's installer-paths configuration, or a
  * direct target path relative to the project root.
  *
@@ -47,12 +47,26 @@ use Composer\Script\Event;
  * }
  * ```
  *
+ * ### Multiple files
+ *
+ * ```json
+ * {
+ *     "extra": {
+ *         "dropins": [
+ *             { "file": "pint.json", "target-path": "." },
+ *             { "file": "phpstan.neon", "target-path": "." }
+ *         ]
+ *     }
+ * }
+ * ```
+ *
  * - `file`        — filename to copy from the package root (required)
  * - `target-type` — installer-paths type to resolve the target directory
  * - `target-path` — direct path relative to project root (alternative to target-type)
  * - `target-dir`  — subdirectory within the target path (optional, used with target-type)
  *
  * Either `target-type` or `target-path` is required.
+ * Use `dropin` for a single file or `dropins` for multiple files.
  *
  * @since 1.0.0
  */
