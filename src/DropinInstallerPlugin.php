@@ -82,7 +82,10 @@ class DropinInstallerPlugin implements PluginInterface, EventSubscriberInterface
     }
 
     /**
-     * Install all dropin files from packages that declare extra.dropin.
+     * Install all dropin files from packages that declare extra.dropin or extra.dropins.
+     *
+     * Supports both a single dropin (extra.dropin) and multiple dropins (extra.dropins).
+     * The singular form is normalized to an array for uniform processing.
      */
     public function installDropins(Event $event): void
     {
@@ -92,13 +95,17 @@ class DropinInstallerPlugin implements PluginInterface, EventSubscriberInterface
             ->getPackages();
 
         foreach ($packages as $package) {
-            $dropin = $package->getExtra()['dropin'] ?? null;
+            $extra = $package->getExtra();
 
-            if ($dropin === null) {
-                continue;
+            $dropins = match(true) {
+                isset($extra['dropins']) => $extra['dropins'],
+                isset($extra['dropin'])  => [$extra['dropin']],
+                default                  => [],
+            };
+
+            foreach ($dropins as $dropin) {
+                $this->installDropin($package, $dropin);
             }
-
-            $this->installDropin($package, $dropin);
         }
     }
 
